@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="APE@MAP" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>2025-09-14 Wanderung</name>
+    <time>2025-09-14T06:40:00Z</time>
+  </metadata>
+  <wpt lat="47.5735" lon="12.1210"><ele>1563</ele><name>Pendling</name></wpt>
+  <wpt lat="47.5760" lon="12.1660"><ele>620</ele><name>Parkplatz</name></wpt>
+  <trk>
+    <name>2025-09-14 Wanderung</name>
+    <trkseg>
+      <trkpt lat="47.5763" lon="12.1662"><ele>612</ele><time>2025-09-14T06:40:00Z</time></trkpt>
+      <trkpt lat="47.5758" lon="12.1610"><ele>665</ele><time>2025-09-14T06:52:00Z</time></trkpt>
+      <trkpt lat="47.5752" lon="12.1560"><ele>735</ele><time>2025-09-14T07:05:00Z</time></trkpt>
+      <trkpt lat="47.5746" lon="12.1500"><ele>828</ele><time>2025-09-14T07:20:00Z</time></trkpt>
+      <trkpt lat="47.5742" lon="12.1440"><ele>935</ele><time>2025-09-14T07:37:00Z</time></trkpt>
+      <trkpt lat="47.5739" lon="12.1380"><ele>1060</ele><time>2025-09-14T07:56:00Z</time></trkpt>
+      <trkpt lat="47.5737" lon="12.1320"><ele>1210</ele><time>2025-09-14T08:18:00Z</time></trkpt>
+      <trkpt lat="47.5736" lon="12.1270"><ele>1385</ele><time>2025-09-14T08:42:00Z</time></trkpt>
+      <trkpt lat="47.5735" lon="12.1213"><ele>1560</ele><time>2025-09-14T09:08:00Z</time></trkpt>
+      <trkpt lat="47.5735" lon="12.1210"><ele>1563</ele><time>2025-09-14T09:12:00Z</time></trkpt>
+      <trkpt lat="47.5736" lon="12.1245"><ele>1470</ele><time>2025-09-14T09:35:00Z</time></trkpt>
+      <trkpt lat="47.5737" lon="12.1300"><ele>1300</ele><time>2025-09-14T09:52:00Z</time></trkpt>
+      <trkpt lat="47.5739" lon="12.1360"><ele>1120</ele><time>2025-09-14T10:08:00Z</time></trkpt>
+      <trkpt lat="47.5742" lon="12.1420"><ele>975</ele><time>2025-09-14T10:22:00Z</time></trkpt>
+      <trkpt lat="47.5747" lon="12.1490"><ele>842</ele><time>2025-09-14T10:38:00Z</time></trkpt>
+      <trkpt lat="47.5753" lon="12.1560"><ele>728</ele><time>2025-09-14T10:53:00Z</time></trkpt>
+      <trkpt lat="47.5760" lon="12.1630"><ele>640</ele><time>2025-09-14T11:08:00Z</time></trkpt>
+      <trkpt lat="47.5763" lon="12.1662"><ele>612</ele><time>2025-09-14T11:15:00Z</time></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="APE@MAP" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>Radtour Inntalradweg – Hall bis Schwaz</name>
+    <time>2025-07-05T09:00:00Z</time>
+  </metadata>
+  <trk>
+    <name>Radtour Inntalradweg – Hall bis Schwaz</name>
+    <trkseg>
+      <trkpt lat="47.2820" lon="11.5060"><ele>560</ele><time>2025-07-05T09:00:00Z</time></trkpt>
+      <trkpt lat="47.2865" lon="11.5300"><ele>558</ele><time>2025-07-05T09:07:00Z</time></trkpt>
+      <trkpt lat="47.2960" lon="11.5620"><ele>556</ele><time>2025-07-05T09:15:00Z</time></trkpt>
+      <trkpt lat="47.3025" lon="11.6010"><ele>554</ele><time>2025-07-05T09:24:00Z</time></trkpt>
+      <trkpt lat="47.3080" lon="11.6400"><ele>551</ele><time>2025-07-05T09:33:00Z</time></trkpt>
+      <trkpt lat="47.3140" lon="11.6790"><ele>548</ele><time>2025-07-05T09:42:00Z</time></trkpt>
+      <trkpt lat="47.3190" lon="11.7100"><ele>546</ele><time>2025-07-05T09:50:00Z</time></trkpt>
+      <trkpt lat="47.3230" lon="11.7180"><ele>545</ele><time>2025-07-05T09:52:00Z</time></trkpt>
+      <trkpt lat="47.3260" lon="11.7080"><ele>543</ele><time>2025-07-05T09:58:00Z</time></trkpt>
+      <trkpt lat="47.3300" lon="11.6820"><ele>542</ele><time>2025-07-05T10:07:00Z</time></trkpt>
+      <trkpt lat="47.3350" lon="11.6440"><ele>544</ele><time>2025-07-05T10:16:00Z</time></trkpt>
+      <trkpt lat="47.3380" lon="11.6050"><ele>547</ele><time>2025-07-05T10:25:00Z</time></trkpt>
+      <trkpt lat="47.3350" lon="11.5660"><ele>550</ele><time>2025-07-05T10:34:00Z</time></trkpt>
+      <trkpt lat="47.3270" lon="11.5330"><ele>553</ele><time>2025-07-05T10:43:00Z</time></trkpt>
+      <trkpt lat="47.3120" lon="11.5120"><ele>556</ele><time>2025-07-05T10:52:00Z</time></trkpt>
+      <trkpt lat="47.2900" lon="11.5060"><ele>559</ele><time>2025-07-05T11:01:00Z</time></trkpt>
+      <trkpt lat="47.2820" lon="11.5060"><ele>560</ele><time>2025-07-05T11:06:00Z</time></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

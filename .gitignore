@@ -1,0 +1,6 @@
+.DS_Store
+node_modules/
+# never publish personal tracks – only the bundled samples
+*.gpx
+*.GPX
+!SampleData/*.gpx

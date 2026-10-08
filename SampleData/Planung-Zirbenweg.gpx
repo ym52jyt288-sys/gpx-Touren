@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="APE@MAP" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>Planung Zirbenweg</name>
+  </metadata>
+  <rte>
+    <name>Planung Zirbenweg</name>
+    <rtept lat="47.2205" lon="11.4530"><ele>2000</ele></rtept>
+    <rtept lat="47.2170" lon="11.4700"><ele>2040</ele></rtept>
+    <rtept lat="47.2140" lon="11.4900"><ele>2060</ele></rtept>
+    <rtept lat="47.2115" lon="11.5150"><ele>2030</ele></rtept>
+    <rtept lat="47.2100" lon="11.5400"><ele>1990</ele></rtept>
+    <rtept lat="47.2085" lon="11.5650"><ele>1950</ele></rtept>
+  </rte>
+</gpx>

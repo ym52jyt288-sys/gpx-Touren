@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>GPX-Tourenverwaltung</title>
+    <meta name="description" content="GPX-Touren aus APE@MAP verwalten – lokal, ohne Cloud." />
+    <meta name="theme-color" content="#e07d21" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="GPX-Touren" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <link rel="stylesheet" href="vendor/leaflet.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-mark">▲</span>
+        <span class="brand-name">GPX-Touren</span>
+      </div>
+      <nav id="tabs" class="tabs" hidden>
+        <button data-view="list" class="active" type="button">Liste</button>
+        <button data-view="map" type="button">Kartensuche</button>
+        <button data-view="settings" type="button">Einstellungen</button>
+      </nav>
+      <div class="header-right">
+        <span id="status" class="status"></span>
+        <button id="refresh-btn" class="btn small" type="button" hidden title="Ordner neu einlesen">
+          ⟳ Aktualisieren
+        </button>
+      </div>
+    </header>
+
+    <main id="app" class="app-main">
+      <div class="setup-wrap">
+        <div class="setup-card" id="boot-card">
+          <div class="setup-icon">⏳</div>
+          <h1>Lädt…</h1>
+          <p class="muted small" id="boot-hint"></p>
+        </div>
+      </div>
+    </main>
+
+    <!-- Diagnose: läuft als klassisches Skript auch von file:// -->
+    <script>
+      (function () {
+        function showBootError(title, htmlBody) {
+          var card = document.getElementById("boot-card");
+          if (!card) return;
+          card.innerHTML =
+            '<div class="setup-icon">⚠️</div><h1>' +
+            title +
+            '</h1><div class="muted" style="text-align:left">' +
+            htmlBody +
+            "</div>";
+        }
+
+        var isWin = /Windows/i.test(navigator.userAgent);
+        var launcher = isWin
+          ? "<code>start-webapp.bat</code> im Explorer doppelklicken"
+          : "<code>start-webapp.command</code> im Finder doppelklicken";
+        var serveCmd = isWin
+          ? "<code>py -m http.server 8000</code> (oder Rechtsklick auf <code>serve.ps1</code> &rarr; „Mit PowerShell ausführen“)"
+          : "<code>python3 -m http.server 8000</code>";
+        var serveHint =
+          "<p>Bitte die App über einen lokalen Server öffnen (keine Installation nötig):</p>" +
+          "<ol style='padding-left:20px'>" +
+          "<li>" + launcher + "</li>" +
+          "<li>oder im Terminal im Ordner <code>webapp</code>: " + serveCmd + "</li>" +
+          "<li>dann in <strong>Chrome / Edge</strong> <code>http://localhost:8000</code> öffnen</li>" +
+          "</ol>";
+
+        if (location.protocol === "file:") {
+          showBootError(
+            "Direkt geöffnet – bitte Server nutzen",
+            "<p>Beim Öffnen per Doppelklick (<code>file://</code>) blockiert der Browser " +
+              "die JavaScript-Module, deshalb bleibt das Ladefenster stehen.</p>" +
+              serveHint
+          );
+          return;
+        }
+
+        // hosted (https, e.g. iPhone home-screen app): no local-server advice
+        if (location.protocol === "https:") {
+          serveHint =
+            "<p>Bitte die Seite neu laden. Hilft das nicht: Safari/Chrome aktualisieren " +
+            "(iOS 16.4 oder neuer) bzw. die App vom Home-Bildschirm entfernen und neu hinzufügen.</p>";
+        }
+        window.__gpxServeHint = serveHint;
+        window.__gpxBooted = false;
+
+        window.addEventListener("error", function (e) {
+          if (window.__gpxBooted) return;
+          if (e && e.target && e.target.tagName === "SCRIPT") {
+            showBootError(
+              "Skript konnte nicht geladen werden",
+              "<p>Datei: <code>" +
+                (e.target.src || "?") +
+                "</code></p>" +
+                window.__gpxServeHint
+            );
+          }
+        }, true);
+
+        window.addEventListener("unhandledrejection", function (e) {
+          if (window.__gpxBooted) return;
+          showBootError(
+            "Fehler beim Start",
+            "<p><code>" +
+              String((e && e.reason && (e.reason.message || e.reason)) || e) +
+              "</code></p>"
+          );
+        });
+
+        setTimeout(function () {
+          if (window.__gpxBooted) return;
+          showBootError(
+            "Start hängt",
+            (location.protocol === "https:"
+              ? "<p>Die App-Module wurden nicht rechtzeitig ausgeführt (langsame Verbindung oder veralteter Browser).</p>"
+              : "<p>Die App-Module wurden nicht ausgeführt. Häufigste Ursache: die Seite " +
+                "wurde nicht über <code>http://localhost</code> geöffnet, oder ein anderer " +
+                "Browser als Chrome/Edge wird verwendet.</p>") +
+              window.__gpxServeHint
+          );
+        }, 4000);
+      })();
+    </script>
+
+    <!-- Leaflet (vendored, works offline; only map tiles need internet) -->
+    <script src="vendor/leaflet.js"></script>
+    <script type="module" src="js/main.js"></script>
+    <script>
+      // offline start + install as an app (needs https or localhost)
+      if ("serviceWorker" in navigator && window.isSecureContext && location.protocol !== "file:") {
+        window.addEventListener("load", function () {
+          navigator.serviceWorker.register("sw.js").catch(function (err) {
+            console.warn("Service Worker nicht registriert:", err);
+          });
+        });
+      }
+    </script>
+  </body>
+</html>

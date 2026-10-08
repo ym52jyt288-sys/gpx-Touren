@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="APE@MAP" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>30 17#7km55#737m#4h17</name>
+    <time>2024-08-30T06:17:00Z</time>
+  </metadata>
+  <trk>
+    <name>30 17#7km55#737m#4h17</name>
+    <trkseg>
+      <trkpt lat="47.4820" lon="11.9200"><ele>860</ele><time>2024-08-30T06:17:00Z</time></trkpt>
+      <trkpt lat="47.4835" lon="11.9245"><ele>930</ele><time>2024-08-30T06:33:00Z</time></trkpt>
+      <trkpt lat="47.4851" lon="11.9290"><ele>1015</ele><time>2024-08-30T06:52:00Z</time></trkpt>
+      <trkpt lat="47.4866" lon="11.9335"><ele>1120</ele><time>2024-08-30T07:14:00Z</time></trkpt>
+      <trkpt lat="47.4882" lon="11.9378"><ele>1250</ele><time>2024-08-30T07:40:00Z</time></trkpt>
+      <trkpt lat="47.4899" lon="11.9410"><ele>1400</ele><time>2024-08-30T08:08:00Z</time></trkpt>
+      <trkpt lat="47.4915" lon="11.9432"><ele>1560</ele><time>2024-08-30T08:38:00Z</time></trkpt>
+      <trkpt lat="47.4924" lon="11.9440"><ele>1597</ele><time>2024-08-30T08:50:00Z</time></trkpt>
+      <trkpt lat="47.4913" lon="11.9420"><ele>1470</ele><time>2024-08-30T09:14:00Z</time></trkpt>
+      <trkpt lat="47.4897" lon="11.9392"><ele>1330</ele><time>2024-08-30T09:33:00Z</time></trkpt>
+      <trkpt lat="47.4880" lon="11.9360"><ele>1190</ele><time>2024-08-30T09:50:00Z</time></trkpt>
+      <trkpt lat="47.4863" lon="11.9320"><ele>1060</ele><time>2024-08-30T10:05:00Z</time></trkpt>
+      <trkpt lat="47.4846" lon="11.9275"><ele>960</ele><time>2024-08-30T10:20:00Z</time></trkpt>
+      <trkpt lat="47.4830" lon="11.9228"><ele>895</ele><time>2024-08-30T10:31:00Z</time></trkpt>
+      <trkpt lat="47.4820" lon="11.9200"><ele>860</ele><time>2024-08-30T10:34:00Z</time></trkpt>
+    </trkseg>
+  </trk>
+</gpx>
