@@ -18,14 +18,13 @@ const C = {
 };
 const ROUTE = [
   [[300, 744], [480, 744], [452, 584], [588, 584]],
-  [[588, 584], [627, 584], [665, 584], [704, 584]],
+  [[588, 584], [676, 584], [704, 548], [704, 492]],
 ];
 const ROUTE_W = 64;
 const START = { c: [300, 744], r: 50, ring: 30 };
-// the pin stands just above the route's end point, as on a map (a line running
-// into the narrow tip would bulge out on both sides)
-const PIN = { c: [704, 324], r: 112, d: 196, round: 14 }; // d = tip below centre
-const DOT = { c: [704, 324], r: 44 };
+// geometry exactly as chosen in the icon preview: the route runs into the pin tip
+const PIN = { c: [704, 300], r: 112, d: 196, round: 14 }; // d = tip below centre
+const DOT = { c: [704, 300], r: 44 };
 const GRAD = [0.35, 1]; // gradient direction (objectBoundingBox x2/y2)
 
 const phi = Math.acos(PIN.r / PIN.d);
