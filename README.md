@@ -355,7 +355,8 @@ webapp/
 │                          offlineDialog · Handy-Ansicht: mobileList, mobileMap,
 │                          filterSheet, layerSheet, ui (Sheet/Toast/Schalter)
 ├─ manifest.webmanifest, sw.js, icons/   PWA: Installierbarkeit + Offline-Start
-├─ tools/make-icons.mjs    erzeugt die Icons einmalig (kein Build-Schritt)
+├─ tools/make-icons.mjs    erzeugt das App-Icon („Spur“, grün) als icon.svg + PNGs
+│                          (`npm run icons`, kein Build-Schritt)
 ├─ SampleData/             Beispiel-GPX (Wandern / Rad / Planung / Bergtour)
 ├─ start-webapp.command    Launcher macOS  (Finder-Doppelklick)
 ├─ start-webapp.bat        Launcher Windows (Explorer-Doppelklick)

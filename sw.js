@@ -8,7 +8,7 @@
 //
 // SHELL must list every file the app needs to boot. Add new modules here.
 
-const CACHE = "gpx-shell-v2";
+const CACHE = "gpx-shell-v3";
 const NETWORK_TIMEOUT_MS = 3500;
 
 const SHELL = [
@@ -16,6 +16,7 @@ const SHELL = [
   "index.html",
   "styles.css",
   "manifest.webmanifest",
+  "icons/icon.svg",
   "icons/apple-touch-icon.png",
   "icons/icon-192.png",
   "icons/icon-512.png",

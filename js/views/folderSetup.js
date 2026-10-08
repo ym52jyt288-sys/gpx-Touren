@@ -1,6 +1,5 @@
 import { el, clear } from "../dom.js";
 import { supportsFileSystemAccess, supportsDirectoryInput } from "../folderAccess.js";
-import { icon } from "../icons.js";
 
 /**
  * @param {HTMLElement} mount
@@ -84,7 +83,7 @@ function renderImportSetup(mount, o) {
     "div",
     { class: "setup-card" },
     o.mobile
-      ? el("div", { class: "setup-icon msetup-icon", html: icon("route", 34) })
+      ? el("img", { class: "msetup-icon", src: "icons/icon.svg", alt: "" })
       : el("div", { class: "setup-icon", text: "📥" }),
     el("h1", { text: o.mobile ? "Deine Touren" : "GPX-Dateien importieren" }),
     el("p", {
