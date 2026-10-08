@@ -8,7 +8,7 @@
 //
 // SHELL must list every file the app needs to boot. Add new modules here.
 
-const CACHE = "gpx-shell-v1";
+const CACHE = "gpx-shell-v2";
 const NETWORK_TIMEOUT_MS = 3500;
 
 const SHELL = [
@@ -35,6 +35,7 @@ const SHELL = [
   "js/geo.js",
   "js/geocode.js",
   "js/gpx.js",
+  "js/icons.js",
   "js/indexer.js",
   "js/localFolder.js",
   "js/main.js",
@@ -46,11 +47,16 @@ const SHELL = [
   "js/trackColors.js",
   "js/views/detail.js",
   "js/views/filterPanel.js",
+  "js/views/filterSheet.js",
   "js/views/folderSetup.js",
+  "js/views/layerSheet.js",
   "js/views/list.js",
   "js/views/mapSearch.js",
+  "js/views/mobileList.js",
+  "js/views/mobileMap.js",
   "js/views/offlineDialog.js",
   "js/views/settings.js",
+  "js/views/ui.js",
 ];
 
 self.addEventListener("install", (event) => {

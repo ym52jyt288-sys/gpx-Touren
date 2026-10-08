@@ -12,6 +12,9 @@ import { analyzeGpx } from "../js/analyzer.js";
 import { douglasPeucker, haversine } from "../js/geo.js";
 import { mergePreserving, nfc } from "../js/indexer.js";
 import { toProfileSamples, createElevationChart } from "../js/chart.js";
+import { fmtDistance, fmtElevation, fmtTotalDistance, shortTitle } from "../js/format.js";
+import { emptyFilter, activeFilterCount, resetFilter, groupToursByYear } from "../js/filter.js";
+import { segDistPx, toursNearPoint } from "../js/spatial.js";
 import {
   lngToTileX,
   latToTileY,
@@ -263,6 +266,70 @@ check("orphan keys carry the layer id prefix", () => {
   for (const k of orphanKeysForRegion(a, [a])) {
     assert.match(k, /^sat\/10\/\d+\/\d+$/);
   }
+});
+
+// --- mobile UI helpers ------------------------------------------------------
+
+console.log("\nmobile helpers:");
+check("German number format in distances / elevations / speeds", () => {
+  assert.equal(fmtDistance(6800), "6,8 km");
+  assert.equal(fmtDistance(950), "950 m");
+  assert.equal(fmtElevation(1838.4), "1.838 m");
+  assert.equal(fmtTotalDistance(1234567), "1.235 km");
+});
+check("shortTitle drops the trailing distance, keeps real names", () => {
+  assert.equal(shortTitle({ titleAuto: "Kufstein – Pendling (6,8 km)" }), "Kufstein – Pendling");
+  assert.equal(shortTitle({ title: "Rundtour (4,3 km · 737 hm)" }), "Rundtour");
+  assert.equal(shortTitle({ titleUser: "Abendrunde" }), "Abendrunde");
+  // nothing left after stripping -> keep the full name
+  assert.equal(shortTitle({ titleUser: "(12 km)" }), "(12 km)");
+});
+check("activeFilterCount / resetFilter", () => {
+  const f = emptyFilter();
+  assert.equal(activeFilterCount(f), 0);
+  f.categories.add("cycling");
+  f.plan = "only";
+  f.minKm = 10;
+  f.maxKm = 50; // same group as minKm
+  f.text = "inn"; // text is not a filter criterion
+  assert.equal(activeFilterCount(f), 3);
+  resetFilter(f);
+  assert.equal(activeFilterCount(f), 0);
+  assert.equal(f.text, "inn", "keeps the search text by default");
+  resetFilter(f, { keepText: false });
+  assert.equal(f.text, "");
+});
+check("groupToursByYear keeps sort order and sums per year", () => {
+  const d = (y, m) => new Date(y, m, 1).getTime();
+  const g = groupToursByYear([
+    { tourDate: d(2025, 5), distanceM: 1000, ascentM: 10 },
+    { tourDate: d(2025, 1), distanceM: 2000, ascentM: 20 },
+    { tourDate: d(2023, 8), distanceM: 500, ascentM: 5 },
+    { tourDate: null, distanceM: 100, ascentM: 1 },
+  ]);
+  assert.deepEqual(g.map((x) => x.year), [2025, 2023, null]);
+  assert.equal(g[0].tours.length, 2);
+  assert.equal(g[0].distanceM, 3000);
+  assert.equal(g[0].ascentM, 30);
+});
+check("segDistPx: perpendicular, beyond the ends, degenerate segment", () => {
+  const a = { x: 0, y: 0 };
+  const b = { x: 10, y: 0 };
+  assert.equal(segDistPx({ x: 5, y: 3 }, a, b), 3);
+  assert.equal(segDistPx({ x: 13, y: 4 }, a, b), 5);
+  assert.equal(segDistPx({ x: 3, y: 4 }, a, a), 5);
+});
+check("toursNearPoint returns every overlapping track, nearest first", () => {
+  // identity projection: lat -> y, lon -> x
+  const project = ([lat, lon]) => ({ x: lon, y: lat });
+  const t1 = { fileName: "a", bbox: { minLat: 0, maxLat: 0, minLon: 0, maxLon: 100 }, polyline: [[0, 0], [0, 100]] };
+  const t2 = { fileName: "b", bbox: { minLat: 5, maxLat: 5, minLon: 0, maxLon: 100 }, polyline: [[5, 0], [5, 100]] };
+  const t3 = { fileName: "c", bbox: { minLat: 80, maxLat: 80, minLon: 0, maxLon: 100 }, polyline: [[80, 0], [80, 100]] };
+  const hits = toursNearPoint([t3, t1, t2], { x: 50, y: 4 }, project, 18);
+  assert.deepEqual(hits.map((t) => t.fileName), ["b", "a"]);
+  // the lat/lon prefilter box excludes tracks outside it
+  const box = { minLat: 3, maxLat: 7, minLon: 40, maxLon: 60 };
+  assert.deepEqual(toursNearPoint([t1, t2], { x: 50, y: 4 }, project, 18, box).map((t) => t.fileName), ["b"]);
 });
 
 console.log(failures ? `\n${failures} Fehler.` : "\nAlles OK.");

@@ -1,12 +1,21 @@
 // Human-readable formatting.
 
+// German number formatting ("6,8 km", "1.838 m") – matches the generated tour names.
+const nf1 = new Intl.NumberFormat("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const nf0 = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 });
+
 export function fmtDistance(meters) {
-  if (meters >= 1000) return `${(meters / 1000).toFixed(1)} km`;
+  if (meters >= 1000) return `${nf1.format(meters / 1000)} km`;
   return `${Math.round(meters)} m`;
 }
 
+/** Sum of many tours: whole kilometres ("1.234 km"). */
+export function fmtTotalDistance(meters) {
+  return `${nf0.format(Math.round((meters || 0) / 1000))} km`;
+}
+
 export function fmtElevation(meters) {
-  return `${Math.round(meters)} m`;
+  return `${nf0.format(Math.round(meters))} m`;
 }
 
 export function fmtDuration(seconds) {
@@ -19,7 +28,7 @@ export function fmtDuration(seconds) {
 
 export function fmtSpeed(kmh) {
   if (!kmh || kmh <= 0) return "–";
-  return `${kmh.toFixed(1)} km/h`;
+  return `${nf1.format(kmh)} km/h`;
 }
 
 const dateFmt = new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" });
@@ -27,6 +36,23 @@ const dateFmt = new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" });
 export function fmtDate(msOrNull) {
   if (msOrNull == null) return "Kein Datum";
   return dateFmt.format(new Date(msOrNull));
+}
+
+const dateShortFmt = new Intl.DateTimeFormat("de-DE", { weekday: "short", day: "numeric", month: "short" });
+const dateLongFmt = new Intl.DateTimeFormat("de-DE", {
+  weekday: "long", day: "numeric", month: "long", year: "numeric",
+});
+
+/** "So., 14. Sept." – for rows grouped under a year heading. */
+export function fmtDateShort(msOrNull) {
+  if (msOrNull == null) return "ohne Datum";
+  return dateShortFmt.format(new Date(msOrNull));
+}
+
+/** "Sonntag, 14. September 2025" */
+export function fmtDateLong(msOrNull) {
+  if (msOrNull == null) return "ohne Datum";
+  return dateLongFmt.format(new Date(msOrNull));
 }
 
 export function avgSpeedKmh(tour) {
@@ -89,6 +115,16 @@ export function effectiveTitle(tour) {
     return stripAppNames(cand); // drops a stale "MyPhoneMyGuide: …" prefix too
   }
   return tour.title || tour.fileName || "Tour";
+}
+
+/**
+ * Display name without the trailing "(6,8 km)" / "(4,3 km · 737 hm)" the
+ * generated names carry – used where the stats sit right next to it.
+ */
+export function shortTitle(tour) {
+  const t = effectiveTitle(tour);
+  const s = t.replace(/\s*\(\s*[\d.,]+\s*km\b[^)]*\)\s*$/i, "").trim();
+  return s || t;
 }
 
 export const CATEGORY_LABEL = {

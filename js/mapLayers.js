@@ -18,12 +18,14 @@ const BASES = [
   {
     id: "osm",
     name: "OpenStreetMap",
+    short: "Standard",
     url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
     options: { maxZoom: 19, attribution: "© OpenStreetMap" },
   },
   {
     id: "topo",
     name: "OpenTopoMap (Relief)",
+    short: "Relief",
     url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
     options: {
       maxZoom: 19,
@@ -37,6 +39,7 @@ const BASES = [
     // Luftbild – am nützlichsten zur Fehlersuche: folgt der Track dem echten Weg?
     id: "sat",
     name: "Satellit (Esri)",
+    short: "Luftbild",
     url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
     options: {
       maxZoom: 19,
@@ -53,6 +56,7 @@ const OVERLAYS = [
     // ever uploaded, as faint lines. Good for spotting where a recording drifts.
     id: "gps",
     name: "Öffentliche GPS-Tracks (OSM)",
+    short: "Öffentliche GPS-Tracks",
     url: "https://gps.tile.openstreetmap.org/lines/{z}/{x}/{y}.png",
     options: { maxZoom: 20, opacity: 0.7, className: "gps-trace-tiles" },
   },
@@ -60,6 +64,7 @@ const OVERLAYS = [
     // Signposted hiking route network (SAC scale, tour symbols, …).
     id: "hiking",
     name: "Wanderwege (Waymarked Trails)",
+    short: "Wanderwege",
     url: "https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png",
     options: {
       maxZoom: 19,
@@ -72,6 +77,7 @@ const OVERLAYS = [
     // the stand-in for CyclOSM.
     id: "cycling",
     name: "Radrouten (Waymarked Trails)",
+    short: "Radrouten",
     url: "https://tile.waymarkedtrails.org/cycling/{z}/{x}/{y}.png",
     options: {
       maxZoom: 19,
@@ -102,29 +108,34 @@ function activeOverlayIds(settings) {
  * Add a base-map switcher and the overlay checkboxes to a Leaflet map, and
  * remember the choice in state.settings.
  *
+ * The returned object also switches layers programmatically – the mobile UI
+ * passes `control: false` and drives it from its own layer sheet.
+ *
  * @param {import("leaflet").Map} map
  * @param {object}    [opts]
  * @param {object}    [opts.settings]      read/written: `mapBase`, `mapOverlays`
  * @param {() => any} [opts.save]          persist settings (fire-and-forget)
  * @param {boolean}   [opts.collapsed=true]
- * @returns {{ baseLayers: Record<string, any>, overlays: Record<string, any> }}
+ * @param {boolean}   [opts.control=true]  add Leaflet's own layers control
  */
 export function attachLayerControl(
   map,
-  { settings = {}, save, collapsed = true } = {}
+  { settings = {}, save, collapsed = true, control = true } = {}
 ) {
   const L = window.L;
-  const wantBase = BASES.some((b) => b.id === settings.mapBase)
+  let currentBase = BASES.some((b) => b.id === settings.mapBase)
     ? settings.mapBase
     : DEFAULT_BASE;
 
   const baseLayers = {};
+  const baseById = new Map();
   for (const def of BASES) {
     // offline-aware: serves tiles from the IndexedDB cache when they were saved
     const layer = offlineTileLayer(def.id, def.url, def.options);
     layer._layerId = def.id;
     baseLayers[def.name] = layer;
-    if (def.id === wantBase) layer.addTo(map);
+    baseById.set(def.id, layer);
+    if (def.id === currentBase) layer.addTo(map);
   }
 
   const wantOverlays = activeOverlayIds(settings);
@@ -138,14 +149,13 @@ export function attachLayerControl(
     if (wantOverlays.has(def.id)) layer.addTo(map);
   }
 
-  L.control.layers(baseLayers, overlays, { collapsed }).addTo(map);
+  if (control) L.control.layers(baseLayers, overlays, { collapsed }).addTo(map);
 
-  map.on("baselayerchange", (e) => {
-    if (!e.layer || !e.layer._layerId) return;
-    settings.mapBase = e.layer._layerId;
+  const persistBase = (id) => {
+    currentBase = id;
+    settings.mapBase = id;
     save?.();
-  });
-
+  };
   const persistOverlays = () => {
     settings.mapOverlays = [...overlayById]
       .filter(([, layer]) => map.hasLayer(layer))
@@ -153,8 +163,39 @@ export function attachLayerControl(
     delete settings.mapGpsOverlay; // migrated away
     save?.();
   };
+
+  // Leaflet's control fires these on the map when the user flips a layer
+  map.on("baselayerchange", (e) => {
+    if (e.layer && e.layer._layerId) persistBase(e.layer._layerId);
+  });
   map.on("overlayadd", (e) => e.layer._layerId && persistOverlays());
   map.on("overlayremove", (e) => e.layer._layerId && persistOverlays());
 
-  return { baseLayers, overlays };
+  return {
+    baseLayers,
+    overlays,
+    bases: BASES.map(({ id, name, short }) => ({ id, name, short })),
+    overlayDefs: OVERLAYS.map(({ id, name, short }) => ({ id, name, short })),
+    baseId: () => currentBase,
+    setBase(id) {
+      const next = baseById.get(id);
+      if (!next || id === currentBase) return;
+      const prev = baseById.get(currentBase);
+      if (prev) map.removeLayer(prev);
+      next.addTo(map);
+      next.bringToBack();
+      persistBase(id);
+    },
+    hasOverlay: (id) => {
+      const layer = overlayById.get(id);
+      return !!layer && map.hasLayer(layer);
+    },
+    setOverlay(id, on) {
+      const layer = overlayById.get(id);
+      if (!layer || on === map.hasLayer(layer)) return;
+      if (on) layer.addTo(map);
+      else map.removeLayer(layer);
+      persistOverlays();
+    },
+  };
 }

@@ -22,8 +22,11 @@ import { el, clear } from "./dom.js";
 import { renderFolderSetup } from "./views/folderSetup.js";
 import { renderList } from "./views/list.js";
 import { renderMapSearch } from "./views/mapSearch.js";
+import { renderMobileList } from "./views/mobileList.js";
+import { renderMobileMap } from "./views/mobileMap.js";
 import { renderSettings } from "./views/settings.js";
 import { openDetail } from "./views/detail.js";
+import { icon } from "./icons.js";
 
 const state = {
   tours: [],
@@ -38,6 +41,7 @@ const state = {
     mapOverlays: [], // aktive Overlay-Ids, z. B. ["gps", "hiking"]
     trackPalette: "kraeftig", // Farbschema der Routenlinien (s. js/trackColors.js)
     radiusSearchEnabled: true, // Umkreissuche (Fadenkreuz + Kreis + Steuerung) aktiv
+    mobileUi: true, // eigene Handy-Oberfläche auf schmalen Touch-Bildschirmen
   },
   searchCenter: null,
   searchRadiusKm: 5,
@@ -51,12 +55,36 @@ const app = {
   _fallbackRescan: null,
   _detailOpen: false,
   local: useLocalLibrary(), // no persistent folder handle -> imported copies
+  scrollPos: {}, // per view, restored when switching tabs
 };
 
 const root = document.getElementById("app");
 const statusEl = document.getElementById("status");
 const tabsEl = document.getElementById("tabs");
 const refreshBtn = document.getElementById("refresh-btn");
+const headerEl = document.querySelector(".app-header");
+const headerRight = document.querySelector(".header-right");
+const viewTitleEl = document.getElementById("view-title");
+
+// Phones (portrait, or landscape with little height) get their own layout:
+// bottom tab bar, full-screen map and detail page, sheets instead of panels.
+const mobileMq = window.matchMedia("(max-width: 720px), (pointer: coarse) and (max-height: 520px)");
+const VIEW_TITLES = { list: "Touren", map: "Karte", settings: "Einstellungen" };
+
+function isMobile() {
+  return mobileMq.matches && state.settings.mobileUi !== false;
+}
+
+function applyLayoutMode() {
+  const mobile = isMobile();
+  document.body.classList.toggle("mobile", mobile);
+  // the tab bar lives in the header on desktop and at the bottom on phones
+  if (mobile) {
+    if (tabsEl.parentElement !== document.body) document.body.append(tabsEl);
+  } else if (tabsEl.parentElement !== headerEl) {
+    headerEl.insertBefore(tabsEl, headerRight);
+  }
+}
 
 // ---------------------------------------------------------------- boot
 
@@ -85,6 +113,14 @@ async function init() {
   if (lastScan) state.lastScan = lastScan;
 
   state.tours = await db.getAllTours();
+
+  applyLayoutMode();
+  mobileMq.addEventListener?.("change", () => {
+    applyLayoutMode();
+    renderActiveView();
+  });
+  // iOS only shows :active feedback when a touch listener exists
+  document.addEventListener("touchstart", () => {}, { passive: true });
 
   wireShell();
 
@@ -121,20 +157,34 @@ async function init() {
 function wireShell() {
   tabsEl.hidden = false;
   refreshBtn.hidden = false;
+  const TAB_ICONS = { list: "route", map: "map", settings: "settings" };
   for (const btn of tabsEl.querySelectorAll("button[data-view]")) {
-    btn.addEventListener("click", () => setView(btn.dataset.view));
+    // desktop shows the text tabs; phones an icon tab bar with short labels
+    const v = btn.dataset.view;
+    btn.innerHTML =
+      icon(TAB_ICONS[v], 24) +
+      `<span class="lbl-d">${btn.textContent.trim()}</span><span class="lbl-m">${VIEW_TITLES[v]}</span>`;
+    btn.addEventListener("click", () => {
+      // tapping the active tab again scrolls back to the top (as native apps do)
+      if (btn.dataset.view === app.view) root.scrollTo({ top: 0, behavior: "smooth" });
+      else setView(btn.dataset.view);
+    });
   }
   if (app.local) {
-    refreshBtn.textContent = "＋ Importieren";
+    refreshBtn.innerHTML = icon("plus", 22) + '<span class="lbl">Importieren</span>';
     refreshBtn.title = "Neue GPX-Dateien importieren";
+    refreshBtn.setAttribute("aria-label", "GPX-Dateien importieren");
     refreshBtn.addEventListener("click", () => importAndScan());
   } else {
+    refreshBtn.innerHTML = icon("refresh", 20) + '<span class="lbl">Aktualisieren</span>';
+    refreshBtn.setAttribute("aria-label", "Ordner neu einlesen");
     refreshBtn.addEventListener("click", () => rescan());
   }
   setShellEnabled(false);
 }
 
 function setShellEnabled(on) {
+  document.body.classList.toggle("shell-off", !on);
   tabsEl.classList.toggle("disabled", !on);
   refreshBtn.disabled = !on;
   for (const b of tabsEl.querySelectorAll("button")) b.disabled = !on;
@@ -150,8 +200,10 @@ function setStatus(text, kind = "") {
 function showFolderSetup(mode) {
   setShellEnabled(false);
   setStatus("");
+  disposeView();
   renderFolderSetup(root, {
     mode,
+    mobile: isMobile(),
     folderName: state.folderName,
     onPick: async (opts) => {
       if (mode === "import") {
@@ -201,27 +253,65 @@ async function startApp({ initialScan }) {
 }
 
 function setView(view) {
+  if (root._view) app.scrollPos[root._view] = root.scrollTop;
   app.view = view;
   for (const b of tabsEl.querySelectorAll("button[data-view]")) {
     b.classList.toggle("active", b.dataset.view === view);
   }
+  for (const v of Object.keys(VIEW_TITLES)) document.body.classList.toggle(`view-${v}`, v === view);
+  viewTitleEl.textContent = VIEW_TITLES[view] || "";
   renderActiveView();
 }
 
-function renderActiveView() {
+function disposeView() {
+  try {
+    root._dispose?.();
+  } catch {
+    /* noop */
+  }
+  root._dispose = root._softRefresh = null;
+  root._view = null;
+}
+
+/**
+ * Draw the active view. `soft` = the data changed underneath (edit in the
+ * detail page, place names arriving): views that can update in place do so –
+ * keeps scroll position, keyboard focus and the map's pan/zoom.
+ */
+function renderActiveView({ soft = false } = {}) {
   if (!state.dirHandle) return;
+  const mobile = isMobile();
+  if (soft && root._softRefresh && root._view === app.view && root._mobile === mobile) {
+    root._softRefresh();
+    return;
+  }
+  const scrollTop = root._view === app.view ? root.scrollTop : app.scrollPos[app.view] || 0;
+  disposeView();
   const ctx = buildCtx();
   clear(root);
-  if (app.view === "map") renderMapSearch(root, ctx);
+  if (app.view === "map") (mobile ? renderMobileMap : renderMapSearch)(root, ctx);
   else if (app.view === "settings") renderSettings(root, ctx);
-  else renderList(root, ctx);
+  else (mobile ? renderMobileList : renderList)(root, ctx);
+  root._view = app.view;
+  root._mobile = mobile;
+  root.scrollTop = scrollTop;
 }
 
 function buildCtx() {
   return {
     state,
-    scanStatus: app.scanStatus,
+    get scanStatus() {
+      return app.scanStatus; // live – soft-refreshed views keep their ctx
+    },
     dirHandle: state.dirHandle,
+    mobile: isMobile(),
+    mobileCapable: mobileMq.matches, // a phone-sized screen, whatever the setting
+    setMobileUi: async (on) => {
+      state.settings.mobileUi = on;
+      await db.setMeta("settings", state.settings);
+      applyLayoutMode();
+      renderActiveView();
+    },
     openDetail: (fileName) => {
       app._detailOpen = true;
       openDetail(buildCtx(), fileName);
@@ -231,7 +321,7 @@ function buildCtx() {
     },
     refreshTours: async () => {
       state.tours = await db.getAllTours();
-      renderActiveView();
+      renderActiveView({ soft: true });
     },
     saveTour: (tour) => db.putTour(tour),
     saveSettings: async () => {
@@ -355,7 +445,7 @@ async function rescan() {
       if (app.scanStatus === "done" && !geocoding) setStatus("");
     }, 4000);
 
-    renderActiveView();
+    renderActiveView({ soft: true });
 
     armGeocoding();
     if (state.settings.resolvePlaces && navigator.onLine) resolvePlacesInBackground();
@@ -485,7 +575,7 @@ async function resolvePlacesInBackground() {
         // refresh the list now and then so names show up as they arrive
         if (++done % 8 === 0 && !app._detailOpen && app.view === "list") {
           await backfillAutoTitles();
-          renderActiveView();
+          renderActiveView({ soft: true });
         }
       } catch {
         if (++fails >= 5) {
@@ -501,7 +591,7 @@ async function resolvePlacesInBackground() {
     await backfillAutoTitles();
     // don't rebuild the map view from under the user (it would reset pan/zoom);
     // the list is where the names show anyway. Map picks them up on next nav.
-    if (!app._detailOpen && app.view === "list") renderActiveView();
+    if (!app._detailOpen && app.view === "list") renderActiveView({ soft: true });
 
     if (app.scanStatus !== "scanning") {
       const open = state.tours.filter(needsGeocoding).length;

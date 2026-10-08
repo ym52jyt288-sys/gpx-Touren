@@ -41,6 +41,48 @@ export function filterIsActive(f) {
   );
 }
 
+/** Number of active criteria groups (the search text not counted). */
+export function activeFilterCount(f) {
+  let n = 0;
+  if (f.categories.size) n++;
+  if (f.plan) n++;
+  if (f.country) n++;
+  if (f.showHidden) n++;
+  if ((f.minRating || 0) > 0) n++;
+  if (f.dateFrom != null || f.dateTo != null) n++;
+  if (f.minKm != null || f.maxKm != null) n++;
+  if (f.minAscent != null || f.maxAscent != null) n++;
+  return n;
+}
+
+/** Clear every criterion in place (keeps the object, and by default the search text). */
+export function resetFilter(f, { keepText = true } = {}) {
+  const text = f.text;
+  Object.assign(f, emptyFilter());
+  if (keepText) f.text = text;
+  return f;
+}
+
+/**
+ * Split an already sorted list into consecutive year groups with sums – the
+ * section headings of the mobile list ("2025 · 23 Touren · 412 km").
+ */
+export function groupToursByYear(tours) {
+  const groups = [];
+  let cur = null;
+  for (const t of tours) {
+    const year = t.tourDate == null ? null : new Date(t.tourDate).getFullYear();
+    if (!cur || cur.year !== year) {
+      cur = { year, tours: [], distanceM: 0, ascentM: 0 };
+      groups.push(cur);
+    }
+    cur.tours.push(t);
+    cur.distanceM += t.distanceM || 0;
+    cur.ascentM += t.ascentM || 0;
+  }
+  return groups;
+}
+
 /** Quick date ranges. Returns {dateFrom, dateTo} in ms (dateTo null = now). */
 export const QUICK_RANGES = {
   "": { label: "gesamter Zeitraum" },
@@ -96,16 +138,18 @@ export function matchesFilter(tour, f) {
 }
 
 export const SORTS = {
-  dateDesc: { label: "Datum (neu zuerst)", cmp: (a, b) => (b.tourDate ?? -Infinity) - (a.tourDate ?? -Infinity) },
-  dateAsc: { label: "Datum (alt zuerst)", cmp: (a, b) => (a.tourDate ?? Infinity) - (b.tourDate ?? Infinity) },
-  distDesc: { label: "Distanz (lang zuerst)", cmp: (a, b) => b.distanceM - a.distanceM },
-  distAsc: { label: "Distanz (kurz zuerst)", cmp: (a, b) => a.distanceM - b.distanceM },
+  dateDesc: { label: "Datum (neu zuerst)", short: "Neueste", cmp: (a, b) => (b.tourDate ?? -Infinity) - (a.tourDate ?? -Infinity) },
+  dateAsc: { label: "Datum (alt zuerst)", short: "Älteste", cmp: (a, b) => (a.tourDate ?? Infinity) - (b.tourDate ?? Infinity) },
+  distDesc: { label: "Distanz (lang zuerst)", short: "Längste", cmp: (a, b) => b.distanceM - a.distanceM },
+  distAsc: { label: "Distanz (kurz zuerst)", short: "Kürzeste", cmp: (a, b) => a.distanceM - b.distanceM },
   nameAsc: {
     label: "Name (A–Z)",
+    short: "A–Z",
     cmp: (a, b) => effectiveTitle(a).localeCompare(effectiveTitle(b), "de"),
   },
   ratingDesc: {
     label: "Bewertung (hoch zuerst)",
+    short: "Beste",
     cmp: (a, b) =>
       normRating(b.rating) - normRating(a.rating) ||
       (b.tourDate ?? -Infinity) - (a.tourDate ?? -Infinity),

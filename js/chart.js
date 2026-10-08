@@ -208,8 +208,9 @@ export function createElevationChart(canvas, opts = {}) {
         cssH - PAD_B + 6
       );
     }
-    ctx.textAlign = "right";
-    ctx.fillText("km", cssW - PAD_R, cssH - PAD_B + 6);
+    // unit in the free left column – at the right end it collided with the last tick
+    ctx.textAlign = "left";
+    ctx.fillText("km", 6, cssH - PAD_B + 6);
 
     // filled area + line
     ctx.beginPath();
@@ -251,7 +252,7 @@ export function createElevationChart(canvas, opts = {}) {
         ctx.fillText(fmtHM(t), xx, padT - 8);
       }
       ctx.textAlign = "left";
-      ctx.fillText("h", PAD_L - 2, padT - 8);
+      ctx.fillText("h", 6, padT - 8); // left column, clear of the "0:00" tick
     }
 
     // hover crosshair
@@ -323,7 +324,12 @@ export function createElevationChart(canvas, opts = {}) {
   }
 
   const onMove = (e) => locate(e.clientX);
-  const onLeave = () => clearCursor();
+  // a finger lifting off fires pointerleave – keep the readout (and the map
+  // marker) where the user left it; a scroll taking over (pointercancel) clears
+  const onLeave = (e) => {
+    if (e && e.pointerType === "touch" && e.type === "pointerleave") return;
+    clearCursor();
+  };
   canvas.addEventListener("pointermove", onMove);
   canvas.addEventListener("pointerdown", onMove);
   canvas.addEventListener("pointerleave", onLeave);

@@ -70,7 +70,7 @@ Hochgeladen wird nur der App-Code; deine GPX-Dateien bleiben auf dem iPhone.
    Datenlöschung von iOS geschützt.
 2. **Dateien auswählen** → Durchsuchen → iCloud Drive → GPX-Ordner → *Auswählen* →
    *Alle auswählen* → Öffnen. Die App legt eine eigene Kopie an und indexiert sie.
-3. Neue APE@MAP-Exporte später über **＋ Importieren** (oben rechts) holen –
+3. Neue APE@MAP-Exporte später über das **＋** (oben rechts in „Touren") holen –
    einfach wieder alle auswählen, bereits vorhandene Dateien werden übersprungen,
    geänderte ersetzt (Bewertung, Titel, Notizen bleiben erhalten).
 
@@ -84,6 +84,38 @@ Unterschiede zum Desktop-Ordnermodus („lokale Bibliothek"):
   iPhones, **nicht in iCloud gesichert**. Das Entfernen der App vom
   Home-Bildschirm löscht sie.
 - Am Desktop lässt sich dieser Modus mit `http://localhost:8000/?local` testen.
+
+### Handy-Ansicht
+
+Auf schmalen Touch-Bildschirmen (Hochformat ≤ 720 px, oder Querformat mit
+wenig Höhe) bekommt die App eine eigene, aufs Daumen-Bedienen ausgelegte
+Oberfläche. Am Computer ändert sich nichts.
+
+- **Tab-Leiste unten**: Touren · Karte · Einstellungen. Den aktiven Tab nochmals
+  antippen springt nach oben; jeder Tab merkt sich seine Scrollposition.
+- **Touren**: Suchfeld + Schnellfilter-Chips (Rad, Wandern, Planungen, 4★ +,
+  12 Monate), daneben **Filter** (alle Kriterien als Sheet, der Knopf zeigt live
+  „N Touren anzeigen") und **Sortierung**. Nach Datum sortiert ist die Liste nach
+  Jahren gruppiert, mit Summen (Touren · km). Ganz oben die Summe der gezeigten
+  Touren (Anzahl · km · Höhenmeter).
+- **Karte** (Vollbild): Ortssuche, Filter, Kartenstil, **Mein Standort**. Das
+  Sheet unten zeigt immer, welche Touren **im sichtbaren Ausschnitt** liegen
+  (antippen klappt die Liste auf). **Tippen auf eine Route** wählt sie aus – liegen
+  dort mehrere Tracks übereinander, werden alle angeboten. „Alle zeigen" holt
+  sämtliche (gefilterten) Touren ins Bild. Der Knopf **Kartenstil** öffnet
+  Basiskarte, Zusatzebenen, Linienfarben und „Ausschnitt offline speichern".
+- **Tour** (Vollbild-Seite): Karte oben fest, darunter scrollen Name, Sterne
+  (direkt antippbar), drei Kennzahlen, **GPX teilen** (iOS-Teilen-Menü, z. B. an
+  APE@MAP oder AirDrop; sonst Download) und **Karte offline** (speichert die Karte
+  rund um die Tour). Höhenprofil: antippen oder wischen zeigt die Stelle auf der
+  Karte – die Ablesung bleibt nach dem Loslassen stehen. Bearbeiten (Name,
+  Kategorie, Planung, Ausblenden, Notizen, Orte neu ermitteln, Löschen) als
+  gruppierte Liste. Zurück über **‹** oder die Zurück-Geste/-Taste.
+- Bewusst weggelassen (bleiben am Computer): Umkreissuche mit Fadenkreuz,
+  Mehrfachauswahl auf der Karte, Augen-Symbol in der Liste (Ausblenden steht in
+  der Tour), Zoom-Knöpfe (Zwei-Finger-Zoom).
+- **Abschaltbar**: Einstellungen → Darstellung → **Handy-Ansicht** aus = die
+  klassische Oberfläche auch auf dem Handy.
 
 ## Als ZIP weitergeben
 
@@ -318,8 +350,10 @@ webapp/
 │  ├─ offlineTiles.js      Offline-Kachel-Cache (IndexedDB): Download-Bereich,
 │  │                       Leaflet-Layer mit Cache-Vorrang, Löschen pro Bereich
 │  ├─ format.js, dom.js    Hilfen
+│  ├─ icons.js             SVG-Icons der Handy-Ansicht
 │  └─ views/               folderSetup, list, mapSearch, detail, settings,
-│                          offlineDialog
+│                          offlineDialog · Handy-Ansicht: mobileList, mobileMap,
+│                          filterSheet, layerSheet, ui (Sheet/Toast/Schalter)
 ├─ manifest.webmanifest, sw.js, icons/   PWA: Installierbarkeit + Offline-Start
 ├─ tools/make-icons.mjs    erzeugt die Icons einmalig (kein Build-Schritt)
 ├─ SampleData/             Beispiel-GPX (Wandern / Rad / Planung / Bergtour)

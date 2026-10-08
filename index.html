@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>GPX-Tourenverwaltung</title>
     <meta name="description" content="GPX-Touren aus APE@MAP verwalten – lokal, ohne Cloud." />
-    <meta name="theme-color" content="#e07d21" />
+    <meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
@@ -22,6 +23,7 @@
         <span class="brand-mark">▲</span>
         <span class="brand-name">GPX-Touren</span>
       </div>
+      <h1 id="view-title" class="view-title"></h1>
       <nav id="tabs" class="tabs" hidden>
         <button data-view="list" class="active" type="button">Liste</button>
         <button data-view="map" type="button">Kartensuche</button>

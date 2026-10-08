@@ -5,6 +5,7 @@ import { TRACK_PALETTES, resolveTrackPalette } from "../trackColors.js";
 import { getRegions, clearTiles, clearRegions } from "../db.js";
 import { removeRegion } from "../offlineTiles.js";
 import { baseLayerDef } from "../mapLayers.js";
+import { switchEl } from "./ui.js";
 
 const fmtInt = (n) => Number(n || 0).toLocaleString("de-DE");
 function fmtBytes(n) {
@@ -18,6 +19,7 @@ function fmtBytes(n) {
 export function renderSettings(mount, ctx) {
   clear(mount);
   const { state } = ctx;
+  const mobile = !!ctx.mobile;
 
   const row = (label, value) =>
     el("div", { class: "set-row" },
@@ -39,6 +41,21 @@ export function renderSettings(mount, ctx) {
       await ctx.saveSettings();
     },
   });
+
+  // phones: an on/off switch row instead of the checkbox sentence
+  const autoPlacesRow = mobile
+    ? el("div", { class: "set-row set-switch" },
+        el("span", { text: "Orte + Land automatisch ermitteln" }),
+        switchEl({
+          checked: !!state.settings.resolvePlaces,
+          label: "Orte automatisch ermitteln",
+          onchange: async (on) => {
+            state.settings.resolvePlaces = on;
+            await ctx.saveSettings();
+          },
+        }))
+    : el("label", { class: "chk", htmlFor: "auto-places" },
+        autoPlaces, " Orte + Land entlang der Strecke automatisch ermitteln (Standard: an)");
 
   const hiddenCount = state.tours.filter((t) => t.hidden).length;
 
@@ -136,13 +153,14 @@ export function renderSettings(mount, ctx) {
 
       el("section", { class: "card" },
         el("h3", { text: ctx.local ? "Bibliothek" : "Ordner" }),
-        ctx.local
+        ctx.local && !mobile
           ? el("p", { class: "muted small",
               text: "Ohne dauerhaften Ordnerzugriff (iPhone/Safari) hält die App eigene Kopien der GPX-Dateien. Importieren ist additiv; gelöscht wird nur über „Tour löschen“ oder „Bibliothek leeren“." })
-          : row("Name", state.folderName || "–"),
-        row("Indexierte Touren", String(state.tours.length)),
+          : null,
+        ctx.local ? null : row("Name", state.folderName || "–"),
+        row(mobile ? "Touren" : "Indexierte Touren", String(state.tours.length)),
         row("Zuletzt aktualisiert", state.lastScan ? fmtDate(state.lastScan) : "–"),
-        row("Änderungserkennung", watchMode),
+        mobile && ctx.local ? null : row("Änderungserkennung", watchMode),
         ctx.local
           ? el("div", { class: "btn-row" },
               el("button", { class: "btn", text: "＋ GPX-Dateien importieren",
@@ -159,12 +177,29 @@ export function renderSettings(mount, ctx) {
                 disabled: ctx.scanStatus === "scanning",
                 onclick: () => ctx.rescan() }),
               el("button", { class: "btn subtle", text: "Anderen Ordner wählen…",
-                onclick: () => ctx.changeFolder() }))),
+                onclick: () => ctx.changeFolder() })),
+        ctx.local && mobile
+          ? el("p", { class: "muted small",
+              text: "Die App hält eigene Kopien der GPX-Dateien. Importieren ergänzt nur; die Originale in iCloud bleiben unberührt." })
+          : null),
+
+      ctx.mobileCapable
+        ? el("section", { class: "card" },
+            el("h3", { text: "Darstellung" }),
+            el("div", { class: "set-row set-switch" },
+              el("span", { text: "Handy-Ansicht" }),
+              switchEl({
+                checked: state.settings.mobileUi !== false,
+                label: "Handy-Ansicht",
+                onchange: (on) => ctx.setMobileUi(on),
+              })),
+            el("p", { class: "muted small",
+              text: "Tab-Leiste unten, Vollbild-Karte mit „Touren im Ausschnitt“, Filter als Schnellwahl. Aus = klassische Ansicht wie am Computer (mit Umkreissuche und Mehrfachauswahl)." }))
+        : null,
 
       el("section", { class: "card" },
         el("h3", { text: "Orte" }),
-        el("label", { class: "chk", htmlFor: "auto-places" },
-          autoPlaces, " Orte + Land entlang der Strecke automatisch ermitteln (Standard: an)"),
+        autoPlacesRow,
         el("p", { class: "muted small",
           text: "Startet direkt nach dem ersten Indexieren. Nutzt OpenStreetMap/Nominatim, läuft gedrosselt im Hintergrund, nur online. Asiatische Namen werden latinisiert." })),
 
@@ -177,7 +212,10 @@ export function renderSettings(mount, ctx) {
       el("section", { class: "card" },
         el("h3", { text: "Offline-Karten" }),
         el("p", { class: "muted small",
-          text: "Heruntergeladene Kartenausschnitte für die Nutzung ohne Internet. Neue Ausschnitte lädst du über „Offline-Karte“ in der Kartensuche. Nur kleine, selbst genutzte Gebiete – die Kachel-Anbieter (OSM, OpenTopoMap, Esri) sehen Massen-Downloads nicht vor." }),
+          text: (mobile
+            ? "Heruntergeladene Kartenausschnitte für unterwegs ohne Netz. Neue Ausschnitte: in einer Tour „Karte offline“ oder auf der Karte über den Ebenen-Knopf."
+            : "Heruntergeladene Kartenausschnitte für die Nutzung ohne Internet. Neue Ausschnitte lädst du über „Offline-Karte“ in der Kartensuche.")
+            + " Nur kleine, selbst genutzte Gebiete – die Kachel-Anbieter (OSM, OpenTopoMap, Esri) sehen Massen-Downloads nicht vor." }),
         offlineBody),
 
       el("section", { class: "card" },
@@ -187,8 +225,11 @@ export function renderSettings(mount, ctx) {
           ? el("button", { class: "btn", text: "Alle wieder einblenden",
               onclick: () => ctx.unhideAll() })
           : el("p", { class: "muted small",
-              text: "Ausblenden geht in der Detailansicht oder über das Augen-Symbol in der Liste." })),
+              text: mobile
+                ? "Ausblenden geht in einer Tour unter „Bearbeiten“."
+                : "Ausblenden geht in der Detailansicht oder über das Augen-Symbol in der Liste." })),
 
+      ...advanced(
       el("section", { class: "card" },
         el("h3", { text: "Index" }),
         el("button", { class: "btn danger", text: "Index zurücksetzen",
@@ -208,9 +249,16 @@ export function renderSettings(mount, ctx) {
         row("Als App installiert",
           window.matchMedia?.("(display-mode: standalone)").matches || navigator.standalone ? "ja" : "nein"),
         row("Karte", typeof window.L !== "undefined" ? "Leaflet geladen" : "offline / nicht geladen"),
-        row("Online", navigator.onLine ? "ja" : "nein"))
+        row("Online", navigator.onLine ? "ja" : "nein")))
     )
   );
+
+  function advanced(...cards) {
+    if (!mobile) return cards;
+    return [el("details", { class: "card madv" },
+      el("summary", { text: "Erweitert" }),
+      ...cards)];
+  }
 
   populateOffline();
 }

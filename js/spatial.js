@@ -116,3 +116,38 @@ export function toursIntersectingRect(tours, rect) {
   }
   return out;
 }
+
+/** Distance in pixels from point p to segment a–b (all {x,y}). */
+export function segDistPx(p, a, b) {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const len2 = dx * dx + dy * dy;
+  let t = len2 ? ((p.x - a.x) * dx + (p.y - a.y) * dy) / len2 : 0;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(a.x + t * dx - p.x, a.y + t * dy - p.y);
+}
+
+/**
+ * Tours whose route passes within `tolPx` screen pixels of a tapped point –
+ * all of them, nearest first, so overlapping tracks can all be offered.
+ * `project([lat, lon]) -> {x, y}` maps into the same pixel space as `pt`;
+ * `padBox` (lat/lon box around the tap, optional) skips far-away tours cheaply.
+ */
+export function toursNearPoint(tours, pt, project, tolPx, padBox = null) {
+  const hits = [];
+  for (const tour of tours) {
+    if (padBox && !bboxIntersects(tour.bbox, padBox)) continue;
+    const line = tour.polyline || [];
+    if (line.length < 2) continue;
+    let best = Infinity;
+    let a = project(line[0]);
+    for (let i = 1; i < line.length && best > 0.5; i++) {
+      const b = project(line[i]);
+      const d = segDistPx(pt, a, b);
+      if (d < best) best = d;
+      a = b;
+    }
+    if (best <= tolPx) hits.push({ tour, d: best });
+  }
+  return hits.sort((x, y) => x.d - y.d).map((h) => h.tour);
+}
