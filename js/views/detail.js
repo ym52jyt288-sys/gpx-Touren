@@ -121,6 +121,8 @@ export async function openDetail(ctx, fileName) {
   let mapLayersApi = null;
   let restyleRoute = () => {};
   let frameRoute = null;
+  let sheetCover = null; // phones: () => px of the map hidden under the content panel
+  let onSheetChange = null; // phones: the panel moved – keep the route in view
 
   if (mobile) buildMobile();
   else buildDesktop();
@@ -278,20 +280,13 @@ export async function openDetail(ctx, fileName) {
 
   // ---- phone layout --------------------------------------------------
   function buildMobile() {
-    // map: fixed on top, with floating back / layers / enlarge buttons
+    // map: fills the page; the content panel lies over its lower part as a
+    // sheet with two rest positions – "half" (default) and "down" (only the
+    // grab handle peeks out, the whole map is free). The enlarge button, a tap
+    // on the handle or a swipe on the panel switch between them.
     const expandBtn = el("button", {
       type: "button", class: "mdetail-fab", "aria-label": "Karte vergrößern", html: icon("expand", 18),
-      onclick: () => {
-        const big = sheet.classList.toggle("map-big");
-        expandBtn.innerHTML = icon(big ? "shrink" : "expand", 18);
-        expandBtn.setAttribute("aria-label", big ? "Karte verkleinern" : "Karte vergrößern");
-        // after the height transition: re-measure and keep the route framed
-        setTimeout(() => {
-          if (!detailMap) return;
-          detailMap.invalidateSize();
-          frameRoute?.();
-        }, 280);
-      },
+      onclick: () => setSheet(!sheetDown),
     });
     mapBox.append(
       el("button", {
@@ -449,9 +444,7 @@ export async function openDetail(ctx, fileName) {
             el("span", { class: "mcell-k", text: "Tour löschen" }))
         : null);
 
-    sheet.append(
-      mapBox,
-      el("div", { class: "mdetail-scroll" },
+    const scroller = el("div", { class: "mdetail-scroll" },
         head,
         stats,
         sub.length ? el("div", { class: "mstats-sub", text: sub.join(" · ") }) : null,
@@ -467,7 +460,93 @@ export async function openDetail(ctx, fileName) {
           el("h2", { class: "msec-h", text: "Bearbeiten" }),
           edit,
           more,
-          el("p", { class: "mfile muted small", text: tour.fileName }))));
+          el("p", { class: "mfile muted small", text: tour.fileName })));
+    const grab = el("button", {
+      type: "button", class: "mdetail-grab", "aria-label": "Details ausblenden",
+      onclick: () => setSheet(!sheetDown),
+    }, el("span", { class: "mdetail-grab-bar" }));
+    const panel = el("div", { class: "mdetail-panel" }, grab, scroller);
+    // measures the peeking strip (CSS --peek includes the home-indicator inset)
+    const peekProbe = el("div", { class: "mdetail-peek-probe", "aria-hidden": "true" });
+    sheet.append(mapBox, panel, peekProbe);
+
+    let sheetDown = false;
+    const downOffset = () => Math.max(0, panel.offsetHeight - peekProbe.offsetHeight);
+    // px of the map hidden under the panel in its resting position
+    sheetCover = () => sheet.clientHeight - panel.offsetTop - (sheetDown ? downOffset() : 0);
+    function setSheet(down) {
+      if (down === sheetDown) return;
+      const coverBefore = sheetCover();
+      sheetDown = down;
+      sheet.classList.toggle("sheet-down", down);
+      scroller.inert = down;
+      expandBtn.innerHTML = icon(down ? "shrink" : "expand", 18);
+      expandBtn.setAttribute("aria-label", down ? "Details einblenden" : "Karte vergrößern");
+      grab.setAttribute("aria-label", down ? "Details einblenden" : "Details ausblenden");
+      onSheetChange?.(coverBefore);
+    }
+
+    // swipe: down on the panel (scrolled to its top) or on the handle hides it,
+    // up brings it back. Decided on the first move so native scrolling wins
+    // everywhere else.
+    let drag = null;
+    panel.addEventListener("touchstart", (e) => {
+      drag = e.touches.length === 1
+        ? { x0: e.touches[0].clientX, y0: e.touches[0].clientY, target: e.target, active: false, decided: false }
+        : null;
+    }, { passive: true });
+    panel.addEventListener("touchmove", (e) => {
+      if (!drag) return;
+      const t = e.touches[0];
+      const dx = t.clientX - drag.x0;
+      const dy = t.clientY - drag.y0;
+      if (!drag.decided) {
+        if (dx === 0 && dy === 0) return;
+        drag.decided = true;
+        const vertical = Math.abs(dy) > Math.abs(dx);
+        const onGrab = grab.contains(drag.target);
+        const inChart = !!drag.target.closest?.(".chart-wrap, textarea");
+        drag.active = vertical && (sheetDown || onGrab || (dy > 0 && scroller.scrollTop <= 0 && !inChart));
+        if (!drag.active) {
+          drag = null;
+          return;
+        }
+        drag.base = sheetDown ? downOffset() : 0;
+        drag.max = downOffset();
+        drag.samples = [];
+        panel.style.transition = "none";
+      }
+      e.preventDefault();
+      let y = drag.base + dy;
+      if (y < 0) y *= 0.25; // pulled up past the top: give way a little
+      y = Math.min(y, drag.max);
+      drag.y = y;
+      drag.samples.push([e.timeStamp, t.clientY]);
+      if (drag.samples.length > 6) drag.samples.shift();
+      panel.style.transform = `translateY(${y}px)`;
+    }, { passive: false });
+    const endDrag = (e) => {
+      if (!drag) return;
+      const d = drag;
+      drag = null;
+      if (!d.active) return;
+      if (e.type === "touchend") e.preventDefault(); // no click on the handle after a swipe
+      let v = 0; // px per ms, + = downwards
+      const s = d.samples;
+      if (s.length > 1) {
+        const [t0, y0] = s[0];
+        const [t1, y1] = s[s.length - 1];
+        if (t1 - t0 > 0 && e.timeStamp - t1 < 120) v = (y1 - y0) / (t1 - t0);
+      }
+      const down = e.type === "touchcancel"
+        ? sheetDown
+        : Math.abs(v) > 0.3 ? v > 0 : (d.y ?? d.base) > d.max / 2;
+      panel.style.transition = "";
+      panel.style.transform = "";
+      if (down !== sheetDown) setSheet(down);
+    };
+    panel.addEventListener("touchend", endDrag);
+    panel.addEventListener("touchcancel", endDrag);
   }
 
   // ---- shared pieces ----------------------------------------------------
@@ -718,14 +797,38 @@ export async function openDetail(ctx, fileName) {
         casing.setStyle(casingStyleFor(routeWeight, palette));
         line.setStyle({ color: effectiveIsPlan(tour) ? palette.plan : palette.tour });
       };
+      // phones: the map runs under the content panel – frame the route in the
+      // part that stays visible
+      let userMoved = false;
       frameRoute = () => {
         try {
-          map.fitBounds(line.getBounds(), { padding: mobile ? [28, 28] : [20, 20] });
+          if (sheetCover) {
+            map.fitBounds(line.getBounds(), {
+              paddingTopLeft: [28, 28],
+              paddingBottomRight: [28, sheetCover() + 28],
+            });
+          } else {
+            map.fitBounds(line.getBounds(), { padding: mobile ? [28, 28] : [20, 20] });
+          }
         } catch {
           map.setView(tour.start || [47, 11], 12);
         }
+        userMoved = false;
       };
       frameRoute();
+      if (mobile) {
+        map.on("dragstart", () => (userMoved = true));
+        mapEl.addEventListener("touchstart", (e) => {
+          if (e.touches.length > 1) userMoved = true; // pinch zoom
+        }, { passive: true });
+        map.on("dblclick", () => (userMoved = true));
+        // untouched map: re-frame the route for the new visible area; otherwise
+        // keep what was in the middle of the visible part in the middle
+        onSheetChange = (coverBefore) => {
+          if (!userMoved) frameRoute();
+          else map.panBy([0, (sheetCover() - coverBefore) / 2]);
+        };
+      }
       window.L.circleMarker(tour.start, { radius: 6, color: "#2e9e50", interactive: false }).addTo(map);
       window.L.circleMarker(tour.end, { radius: 6, color: "#d1453b", interactive: false }).addTo(map);
       setTimeout(() => map.invalidateSize(), 60);

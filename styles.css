@@ -728,6 +728,7 @@ body.mobile .mchips,
 body.mobile .mrow,
 body.mobile .mfab,
 body.mobile .mdetail-fab,
+body.mobile .mdetail-grab,
 body.mobile .mact,
 body.mobile .mcell-btn,
 body.mobile .mmap-sheet-head,
@@ -1472,30 +1473,33 @@ body.mobile .btn.primary { min-height: 48px; padding: 0 20px; }
 @keyframes mpush { from { transform: translateX(100%); } }
 @keyframes mpop { to { transform: translateX(100%); } }
 .sheet.mdetail {
+  /* strip of the content panel left visible when it is swiped down */
+  --peek: calc(24px + env(safe-area-inset-bottom));
+  position: relative;
   width: 100%;
   height: 100%;
   max-height: none;
-  display: flex;
-  flex-direction: column;
   overflow: hidden;
   border-radius: 0;
   box-shadow: none;
   background: var(--bg);
 }
 .mdetail .detail-map {
-  position: relative;
-  flex: none;
-  height: 42vh;
-  height: 42dvh;
-  min-height: 220px;
+  position: absolute;
+  inset: 0;
+  height: auto;
   margin: 0;
   border-radius: 0;
-  transition: height 0.25s ease;
 }
-.mdetail.map-big .detail-map { height: 74vh; height: 74dvh; }
 .mdetail .map-canvas { z-index: 0; isolation: isolate; }
 .mdetail .svg-map { display: grid; place-items: center; }
-.mdetail .leaflet-bottom { bottom: 14px; }
+/* attribution sits just above the content panel */
+.mdetail .leaflet-bottom {
+  bottom: calc(100% - 42vh + 22px);
+  bottom: calc(100% - 42dvh + 22px);
+  transition: bottom 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.mdetail.sheet-down .leaflet-bottom { bottom: calc(var(--peek) + 8px); }
 .mdetail-fab {
   width: 40px;
   height: 40px;
@@ -1524,19 +1528,49 @@ body.mobile .btn.primary { min-height: 48px; padding: 0 20px; }
   flex-direction: column;
   gap: 10px;
 }
-.mdetail-scroll {
-  position: relative;
+.mdetail-panel {
+  position: absolute;
   z-index: 2;
-  flex: 1 1 auto;
-  min-height: 0;
-  margin-top: -14px;
-  padding: 18px max(16px, env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 32px)
-    max(16px, env(safe-area-inset-left));
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: calc(42vh - 14px);
+  top: calc(42dvh - 14px);
+  display: flex;
+  flex-direction: column;
   border-radius: 16px 16px 0 0;
   background: var(--bg);
   box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.08);
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.mdetail.sheet-down .mdetail-panel { transform: translateY(calc(100% - var(--peek))); }
+.mdetail-peek-probe { position: absolute; width: 0; height: var(--peek); visibility: hidden; pointer-events: none; }
+.mdetail-grab {
+  flex: none;
+  width: 100%;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  cursor: pointer;
+  touch-action: none;
+}
+.mdetail-grab-bar {
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--fg-muted);
+  opacity: 0.45;
+}
+.mdetail-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0 max(16px, env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 32px)
+    max(16px, env(safe-area-inset-left));
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .mdetail-head { padding: 0 2px; }
 .mdetail-title {
@@ -1730,7 +1764,8 @@ body.mobile .mini-sheet .sheet-title { font-size: 19px; }
 @media (orientation: landscape) and (max-height: 520px) {
   body.mobile .view-title { font-size: 22px; }
   body.mobile .tabs button { flex-direction: row; gap: 6px; min-height: 40px; font-size: 12px; }
-  .mdetail .detail-map { height: 58vh; height: 58dvh; }
+  .mdetail-panel { top: calc(58vh - 14px); top: calc(58dvh - 14px); }
+  .mdetail .leaflet-bottom { bottom: calc(100% - 58vh + 22px); bottom: calc(100% - 58dvh + 22px); }
   /* map sheet docks to the left so the map and its buttons stay usable */
   .mmap-sheet { right: auto; width: min(400px, 52%); max-height: calc(100% - 72px); }
   .mmap .leaflet-bottom.leaflet-right { bottom: 0; }

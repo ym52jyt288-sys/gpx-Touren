@@ -8,7 +8,7 @@
 //
 // SHELL must list every file the app needs to boot. Add new modules here.
 
-const CACHE = "gpx-shell-v3";
+const CACHE = "gpx-shell-v4";
 const NETWORK_TIMEOUT_MS = 3500;
 
 const SHELL = [
